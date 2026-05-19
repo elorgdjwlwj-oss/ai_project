@@ -7,8 +7,6 @@ st.set_page_config(
     page_title="서울 Top 10 외국인 인기 관광지",
     page_icon="🗺️",
     layout="wide"
-)
-
 # 데이터 준비 (서울 주요 관광지 Top 10)
 tourist_spots = [
     {"name": "경복궁", "lat": 37.5796, "lon": 126.9770, "desc": "한국의 대표적인 조선시대 법궁, 한복 체험 명소"},
