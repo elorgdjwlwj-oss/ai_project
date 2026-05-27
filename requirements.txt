@@ -2,5 +2,5 @@ streamlit
 folium
 matplotlib
 plotly
-pandas
 numpy
+pandas
