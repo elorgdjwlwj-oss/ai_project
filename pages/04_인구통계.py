@@ -13,12 +13,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import font_manager, rc
 
 # -----------------------------
-# 한글 폰트 설정
+# 한글 설정
 # -----------------------------
-# Streamlit Cloud에서도 최대한 안정적으로 한글 표시
 plt.rcParams['font.family'] = 'NanumGothic'
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -33,39 +31,41 @@ st.set_page_config(
 st.title('📊 제주 연령별 인구 분석')
 
 # -----------------------------
-# 데이터 불러오기
+# 데이터 로드
 # -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv('population.csv', encoding='utf-8')
-    return df
+    return pd.read_csv('population.csv')
 
 
 df = load_data()
 
 # -----------------------------
-# 컬럼 확인
+# 첫 번째 컬럼 = 지역명
 # -----------------------------
-# 숫자 나이 컬럼만 추출
+region_col = df.columns[0]
+
+# -----------------------------
+# 나이 컬럼 찾기
+# -----------------------------
 age_columns = []
 
 for col in df.columns:
-    try:
-        age = int(str(col).replace('세', '').replace(' ', ''))
-        age_columns.append(col)
-    except:
-        pass
+    col_str = str(col)
 
-# 정렬
-age_columns = sorted(
-    age_columns,
-    key=lambda x: int(str(x).replace('세', '').replace(' ', ''))
-)
+    if '세' in col_str:
+        try:
+            age_num = int(col_str.replace('세', '').strip())
+            age_columns.append((age_num, col))
+        except:
+            pass
+
+# 나이순 정렬
+age_columns = sorted(age_columns, key=lambda x: x[0])
 
 # -----------------------------
 # 행정구 선택
 # -----------------------------
-region_col = df.columns[0]
 regions = df[region_col].tolist()
 
 selected_region = st.selectbox(
@@ -74,17 +74,15 @@ selected_region = st.selectbox(
 )
 
 # -----------------------------
-# 선택 지역 데이터 추출
+# 선택 지역 데이터
 # -----------------------------
-row = df[df[region_col] == selected_region].iloc[0]
+selected_row = df[df[region_col] == selected_region].iloc[0]
 
 ages = []
 populations = []
 
-for col in age_columns:
-    age_num = int(str(col).replace('세', '').replace(' ', ''))
-
-    value = row[col]
+for age_num, col_name in age_columns:
+    value = selected_row[col_name]
 
     try:
         value = int(str(value).replace(',', ''))
@@ -95,14 +93,14 @@ for col in age_columns:
     populations.append(value)
 
 # -----------------------------
-# 그래프 생성
+# 그래프
 # -----------------------------
 fig, ax = plt.subplots(figsize=(16, 7))
 
-# 무지개 색상 생성
+# 무지개 색상
 colors = plt.cm.rainbow(np.linspace(0, 1, len(ages)))
 
-# 선 그래프
+# 구간별 색상 적용
 for i in range(len(ages) - 1):
     ax.plot(
         ages[i:i+2],
@@ -116,26 +114,25 @@ ax.scatter(
     ages,
     populations,
     c=colors,
-    s=40
+    s=35
 )
 
-# 제목 및 축
+# 제목
 ax.set_title(
-    f'{selected_region} 연령별 인구 분포',
+    f'{selected_region} 연령별 인구수',
     fontsize=20,
     fontweight='bold'
 )
 
+# 축 라벨
 ax.set_xlabel('나이', fontsize=14)
 ax.set_ylabel('인구수', fontsize=14)
 
 # -----------------------------
-# 가로축 10살 단위 구분선
+# 10살 단위 구분선
 # -----------------------------
-ax.set_xticks(range(0, max(ages)+1, 10))
+ax.set_xticks(range(0, max(ages) + 1, 10))
 ax.grid(axis='x', linestyle='--', alpha=0.6)
-
-# 세로축 격자
 ax.grid(axis='y', linestyle=':', alpha=0.3)
 
 # 여백
@@ -149,12 +146,12 @@ st.pyplot(fig)
 # -----------------------------
 st.subheader('연령별 데이터')
 
-chart_df = pd.DataFrame({
+result_df = pd.DataFrame({
     '나이': ages,
     '인구수': populations
 })
 
-st.dataframe(chart_df, use_container_width=True)
+st.dataframe(result_df, use_container_width=True)
 ```
 
 ---
