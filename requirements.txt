@@ -1,17 +1,6 @@
-streamlit>=1.30.0
-folium>=0.15.0
-streamlit>=1.30.0
-pandas>=2.0.0
-plotly>=5.15.0
-pandas>=2.0.0
-numpy>=1.24.0
-@st.cache_data
-def load_data():
-    # encoding='cp949'를 추가하여 한국어 인코딩으로 읽도록 지정
-    df = pd.read_csv("population.csv", thousands=',', encoding='cp949')
-    
-    # 만약 위 코드로도 안 된다면 아래 코드로 시도해 보세요.
-    # df = pd.read_csv("population.csv", thousands=',', encoding='euc-kr')
-    
-    age_cols = [col for col in df.columns if '거주자_' in col and ('세' in col or '이상' in col)]
-    return df, age_cols
+streamlit
+folium
+matplotlib
+plotly
+pandas
+numpy
