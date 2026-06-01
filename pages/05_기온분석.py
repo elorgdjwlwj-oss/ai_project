@@ -1,51 +1,122 @@
-import os
+import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
-# 1. 파일 경로 설정
-# 현재 스크립트 위치(pages/)의 상위 폴더(..)에 있는 seoul.csv 지정
-current_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(current_dir, "..", "seoul.csv")
+st.set_page_config(
+    page_title="서울 기온 분석",
+    layout="wide"
+)
 
-print(f"데이터 파일을 불러오는 중: {os.path.normpath(csv_path)}")
+st.title("📈 서울 기온 연도별 분석")
 
-try:
-    # 2. CSV 파일 읽기 (인코딩은 시스템 환경에 따라 cp949 또는 utf-8-sig 사용)
-    df = pd.read_csv(csv_path, encoding="cp949")
+uploaded_file = st.file_uploader(
+    "CSV 파일 업로드",
+    type=["csv"]
+)
 
-    # 3. 데이터 정제 (공백 및 탭 문자 제거)
-    # 열 이름의 공백 제거
-    df.columns = df.columns.str.strip()
+if uploaded_file is not None:
 
-    # '날짜' 열 데이터 앞뒤의 탭(\t) 및 공백 제거
-    if "날짜" in df.columns:
-        df["날짜"] = df["날짜"].astype(str).str.strip()
+    # 데이터 읽기
+    df = pd.read_csv(uploaded_file, encoding="cp949")
 
-    # 4. 데이터 기본 정보 출력
-    print("\n=== 데이터 구조 요약 ===")
-    print(df.info())
+    # 날짜 처리
+    df["날짜"] = pd.to_datetime(df["날짜"])
 
-    print("\n=== 데이터 상위 5개 행 ===")
-    print(df.head())
+    df["연도"] = df["날짜"].dt.year
+    df["월"] = df["날짜"].dt.month
+    df["일"] = df["날짜"].dt.day
 
-    # 5. 간단한 분석 예시 (역대 최고 기온과 최저 기온 찾기)
-    print("\n=== 서울 기상 관측 역대 극값 ===")
+    # 월/일 선택
+    col1, col2 = st.columns(2)
 
-    # 결측치 제거 후 계산
-    df_clean = df.dropna(subset=["최고기온(℃)", "최저기온(℃)"])
+    with col1:
+        selected_month = st.selectbox(
+            "월 선택",
+            sorted(df["월"].unique())
+        )
 
-    max_temp_row = df_clean.loc[df_clean["최고기온(℃)"].idxmax()]
-    min_temp_row = df_clean.loc[df_clean["최저기온(℃)"].idxmin()]
+    with col2:
+        selected_day = st.selectbox(
+            "일 선택",
+            sorted(
+                df[df["월"] == selected_month]["일"].unique()
+            )
+        )
 
-    print(
-        f"▶ 역대 최고 기온: {max_temp_row['최고기온(℃)']}℃ ({max_temp_row['날짜']})"
+    # 필터링
+    filtered = df[
+        (df["월"] == selected_month) &
+        (df["일"] == selected_day)
+    ].copy()
+
+    filtered = filtered.sort_values("연도")
+
+    filtered = filtered.dropna(
+        subset=["최고기온(℃)", "최저기온(℃)"]
     )
-    print(
-        f"▶ 역대 최저 기온: {min_temp_row['최저기온(℃)']}℃ ({min_temp_row['날짜']})"
+
+    st.subheader(
+        f"{selected_month}월 {selected_day}일 연도별 최고·최저기온"
     )
 
-except FileNotFoundError:
-    print(
-        f"\n[오류] 파일을 찾을 수 없습니다. 경로를 다시 확인해주세요.\n현재 예상 경로: {os.path.normpath(csv_path)}"
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    years = filtered["연도"].values
+    max_temp = filtered["최고기온(℃)"].values
+    min_temp = filtered["최저기온(℃)"].values
+
+    # 최고기온 무지개색
+    cmap = plt.cm.rainbow
+    colors = cmap(np.linspace(0, 1, len(years)))
+
+    for i in range(len(years)-1):
+        ax.plot(
+            years[i:i+2],
+            max_temp[i:i+2],
+            color=colors[i],
+            linewidth=2.5
+        )
+
+    # 범례용
+    ax.plot(
+        [],
+        [],
+        color="red",
+        linewidth=3,
+        label="최고기온"
     )
-except Exception as e:
-    print(f"\n[오류] 데이터 처리 중 에러가 발생했습니다: {e}")
+
+    # 최저기온
+    ax.plot(
+        years,
+        min_temp,
+        color="#87CEFA",
+        linewidth=2.5,
+        marker="o",
+        label="최저기온"
+    )
+
+    ax.set_title(
+        f"{selected_month}월 {selected_day}일 연도별 기온 변화",
+        fontsize=16
+    )
+
+    ax.set_xlabel("연도")
+    ax.set_ylabel("기온(℃)")
+
+    ax.grid(True, alpha=0.3)
+
+    ax.legend()
+
+    st.pyplot(fig)
+
+    st.dataframe(
+        filtered[
+            ["연도", "최저기온(℃)", "최고기온(℃)"]
+        ],
+        use_container_width=True
+    )
+
+else:
+    st.info("CSV 파일을 업로드하세요.")
