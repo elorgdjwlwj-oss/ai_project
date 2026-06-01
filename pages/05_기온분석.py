@@ -120,3 +120,12 @@ if uploaded_file is not None:
 
 else:
     st.info("CSV 파일을 업로드하세요.")
+# 날짜 변환
+df["날짜"] = pd.to_datetime(
+    df["날짜"],
+    errors="coerce",
+    format="mixed"
+)
+
+# 날짜 변환 실패 행 제거
+df = df.dropna(subset=["날짜"])
