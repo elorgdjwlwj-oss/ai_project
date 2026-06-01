@@ -4,3 +4,7 @@ matplotlib
 plotly
 numpy
 pandas
+streamlit
+pandas
+matplotlib
+numpy
